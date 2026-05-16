@@ -21,6 +21,7 @@
 #include <initializer_list>
 #include <string>
 #include "lex_string.h"
+#include "mysql/strings/collations.h"
 #include "mysql/strings/m_ctype.h"
 #include "sql/field.h"
 #include "sql/mysqld.h"
@@ -162,9 +163,9 @@ bool execute_and_extract_single_value(THD *thd, const char *query,
 const CHARSET_INFO *get_identifier_charset() {
   // Use the same logic as MySQL DD's fs_name_collation()
   if (::lower_case_table_names == 0) {
-    return &my_charset_utf8mb4_bin;  // Case-sensitive
+    return mysql::collation::find_default_binary("utf8mb4");
   }
-  return &my_charset_utf8mb4_0900_ai_ci;  // Case-insensitive
+  return mysql::collation::find_primary("utf8mb4");
 }
 
 std::string normalize_database_name(const std::string &name) {
@@ -185,19 +186,17 @@ std::string normalize_table_name(const std::string &name) {
 
 std::string normalize_column_name(const std::string &name) {
   // Column names are always case-insensitive in MySQL
-  return casedn(&my_charset_utf8mb4_0900_ai_ci, name);
+  return casedn(mysql::collation::find_primary("utf8mb4"), name);
 }
 
 std::string normalize_extension_name(const std::string &name) {
   // Extension names are in system character set.
-  // TODO(villagesql-beta): Check and replace all other hard coded
-  // my_charset_utf8mb4_0900_ai_ci in this file.
   return casedn(system_charset_info, name);
 }
 
 std::string normalize_type_name(const std::string &name) {
   // Type names should be case-insensitive (like SQL type names)
-  return casedn(&my_charset_utf8mb4_0900_ai_ci, name);
+  return casedn(mysql::collation::find_primary("utf8mb4"), name);
 }
 
 std::string normalize_index_name(const std::string &name) {
